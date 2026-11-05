@@ -1,0 +1,22 @@
+{
+  "name": "career-creator",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fontsource/atkinson-hyperlegible": "^5.2.0",
+    "@fontsource/lexend": "^5.2.0",
+    "@fontsource/opendyslexic": "^5.2.0",
+    "phaser": "^3.90.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.21",
+    "vitest": "^2.1.9"
+  }
+}

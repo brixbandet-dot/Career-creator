@@ -1,0 +1,11 @@
+{
+  "name": "Career Creator",
+  "short_name": "Career Creator",
+  "description": "A side-scrolling game that teaches a tech career, built for players with dyslexia.",
+  "start_url": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#fbf5e6",
+  "theme_color": "#3f6fd8",
+  "icons": [{ "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

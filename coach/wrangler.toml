@@ -1,0 +1,10 @@
+# Cloudflare Worker for the Career Creator coach.
+# Secrets are set with `npx wrangler secret put NAME` and never stored in this file.
+name = "career-creator-coach"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# The website(s) allowed to use the coach, comma separated.
+ALLOWED_ORIGINS = "https://brixbandet-dot.github.io,http://localhost:5173"

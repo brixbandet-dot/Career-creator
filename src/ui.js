@@ -113,7 +113,7 @@ export function panel(opts) {
   openCount++;
   layer().append(root);
   (actions.querySelector('.primary') || actions.querySelector('button,a'))?.focus({ preventScroll: true });
-  if (settingsRef().autoRead && canSpeak() && listen) setTimeout(() => { if (!closed) listen.click(); }, 250);
+  if (opts.autoRead !== false && settingsRef().autoRead && canSpeak() && listen) setTimeout(() => { if (!closed) listen.click(); }, 250);
   return { close, root, read: r };
 }
 

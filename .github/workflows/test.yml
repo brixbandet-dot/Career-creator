@@ -13,3 +13,7 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - run: npm ci
+        working-directory: coach
+      - run: npm test
+        working-directory: coach

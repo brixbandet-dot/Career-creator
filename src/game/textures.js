@@ -7,10 +7,12 @@ export function makeTextures(scene) {
   const player = (key, legShift) => {
     g.fillStyle(0x2b3a67); g.fillRoundedRect(4, 14, 10, 22, 4); // backpack
     g.fillStyle(0x3f6fd8); g.fillRoundedRect(8, 10, 26, 30, 10); // body
-    g.fillStyle(0xffd9b3); g.fillCircle(21, 12, 11); // head
+    g.fillStyle(0x5a3a22); g.fillCircle(21, 12, 11); // head (dark brown skin)
     g.fillStyle(0x2b3a67); g.fillRoundedRect(9, 1, 24, 8, 4); // cap
     g.fillRect(26, 6, 10, 4);
-    g.fillStyle(0x1b1b1b); g.fillCircle(25, 13, 2.2); // eye
+    g.fillStyle(0xffffff); g.fillCircle(25, 13, 3); // eye
+    g.fillStyle(0x1b1b1b); g.fillCircle(26, 13, 1.6);
+    g.fillStyle(0x8a5a3b); g.fillRect(28, 17, 3, 1.5); // smile
     g.fillStyle(0x2b3a67);
     g.fillRoundedRect(11 + legShift, 38, 7, 10, 3);
     g.fillRoundedRect(24 - legShift, 38, 7, 10, 3);

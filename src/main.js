@@ -16,6 +16,7 @@ import { initInput, bindTouch, input, releaseAll } from './input.js';
 import { h, panel, toast, readable, listenButton, useSettings } from './ui.js';
 import { speak, stop, canSpeak } from './speech.js';
 import { sfx, setSfx } from './sfx.js';
+import { openCoach, COACH_URL, getCode, setCode } from './coach.js';
 
 let S = loadState();
 let settings = loadSettings();
@@ -101,6 +102,29 @@ async function play(track, index) {
 
 function pauseGame(p) { scene()?.setPaused(p); }
 
+/* ---------------- Coach ---------------- */
+const questTitles = {};
+for (const z of Object.values(ZONES)) for (const q of [...z.quests, z.boss]) questTitles[q.id] = q.t;
+
+function askCoach(extra = {}) {
+  const inGame = !!current && !screens.hasChildNodes();
+  if (inGame) pauseGame(true);
+  openCoach({
+    context: {
+      track: S.track ? TRACKS[S.track].name : undefined,
+      level: TITLES[levelFor(totalXp(S))],
+      zone: current ? ZONES[current.zoneId].name : undefined,
+      done: Object.keys(S.done).map((id) => questTitles[id]).filter(Boolean),
+      ...extra,
+    },
+    settings: () => settings,
+    onClose: () => { if (inGame) pauseGame(false); },
+    openSettings: () => showSettings(showMap),
+  });
+}
+const coachAction = (label, extra) => ({ label, icon: '🧑‍🏫', onClick: ({ close }) => { close(); askCoach(extra); } });
+const questionText = (q) => `${q.q} Choices: ${q.o.join(' / ')}`;
+
 function helpPanel() {
   pauseGame(true);
   const touch = !$('touch').hidden;
@@ -143,6 +167,7 @@ function questPanel(zone, i, after) {
           if (done) { delete S.done[q.id]; save(); } else { addXp(() => { S.done[q.id] = new Date().toISOString(); }); sfx.right(); }
           after(); close();
         } },
+      coachAction('Ask the coach', { quest: `${q.t}: ${q.d}` }),
       { label: 'Back to game', kind: 'primary', onClick: ({ close }) => close() },
     ].filter(Boolean),
     onClose: () => pauseGame(false),
@@ -181,7 +206,7 @@ function gatePanel(zone, i) {
   });
   p = panel({
     icon: '🚪', kicker: 'Quiz door · Take your time', title: q.q, body: ['Pick the right answer to open the door.'],
-    extra, actions: [{ label: 'Back to game', kind: 'ghost', onClick: ({ close }) => close() }],
+    extra, actions: [coachAction('Get a hint', { question: questionText(q) }), { label: 'Back to game', kind: 'ghost', onClick: ({ close }) => close() }],
     onClose: () => pauseGame(false),
   });
 }
@@ -221,7 +246,7 @@ function bossPanel(zone, zoneId, queue) {
   p = panel({
     icon: '👾', kicker: `Boss battle · Hits left: ${s.bossHp}`, kind: 'boss', title: q.q,
     body: ['Each right answer hits the boss. There is no timer.'], extra,
-    actions: [{ label: 'Rest and come back', kind: 'ghost', onClick: ({ close }) => close() }],
+    actions: [coachAction('Get a hint', { question: questionText(q) }), { label: 'Rest and come back', kind: 'ghost', onClick: ({ close }) => close() }],
     onClose: () => pauseGame(false),
   });
 }
@@ -330,7 +355,9 @@ function showMap() {
   showScreen(h('main', { class: 'screen' },
     h('div', { class: 'topbar' },
       h('div', { class: 'logo' }, h('img', { src: './icon.svg', alt: '' }), 'Career Creator'),
-      h('button', { class: 'hudbtn', type: 'button', 'aria-label': 'Reading settings', onclick: () => showSettings(showMap) }, h('span', { 'aria-hidden': 'true' }, '⚙️'))),
+      h('div', { class: 'row' },
+        h('button', { class: 'btn small', type: 'button', onclick: () => askCoach() }, h('span', { 'aria-hidden': 'true' }, '🧑‍🏫'), ' Coach'),
+        h('button', { class: 'hudbtn', type: 'button', 'aria-label': 'Reading settings', onclick: () => showSettings(showMap) }, h('span', { 'aria-hidden': 'true' }, '⚙️')))),
     playerCard(), tabs, h('ol', { class: 'zones' }, cards)));
 }
 
@@ -359,6 +386,23 @@ function questList(z) {
   });
 }
 
+function coachCodeGroup() {
+  const input = h('input', { id: 'coach-code', class: 'textin', type: 'password', autocomplete: 'off', value: getCode(), 'aria-label': 'Coach code' });
+  const status = h('span', { class: 'sub', 'aria-live': 'polite' });
+  const btn = h('button', { class: 'btn small', type: 'button' }, 'Save code');
+  btn.addEventListener('click', () => { setCode(input.value); status.textContent = 'Saved.'; });
+  return h('div', { class: 'setgroup' }, h('h3', {}, 'Coach code'),
+    h('p', { class: 'sub' }, 'If your coach has a code, type it here. It stays on this device.'),
+    h('div', { class: 'row' }, input, btn, status));
+}
+
+function resumeFromSettings() {
+  hideScreens();
+  input.blocked = false;
+  pauseGame(false);
+  $('game').focus({ preventScroll: true });
+}
+
 function showSettings(back) {
   const group = (title, entries, key, render) => h('div', { class: 'setgroup' }, h('h3', {}, title),
     h('div', { class: 'opts' }, entries.map(([value, meta]) => {
@@ -370,7 +414,7 @@ function showSettings(back) {
   const r = readBlock([{ tag: 'h2', text: 'Try it out' }, { tag: 'p', text: 'The robot gave Sam a quest. Sam read it, made a plan, and started to code.' }]);
   const node = h('main', { class: 'screen' },
     h('div', { class: 'topbar' }, h('h1', {}, 'Reading settings'),
-      h('button', { class: 'btn primary', type: 'button', onclick: () => back() }, 'Done')),
+      h('button', { class: 'btn primary', type: 'button', onclick: () => (current ? resumeFromSettings() : back()) }, 'Done')),
     h('section', { class: 'preview' }, r.nodes, r.listen),
     group('Font', Object.entries(FONTS), 'font', (v, m) => h('span', { style: `font-family:${m.css}` }, m.label)),
     group('Text size', Object.entries(SIZES), 'size'),
@@ -380,7 +424,8 @@ function showSettings(back) {
     canSpeak() ? group('Read out loud by itself', onOff, 'autoRead') : null,
     canSpeak() ? group('Voice speed', [[0.75, { label: 'Slow' }], [0.9, { label: 'Normal' }], [1.1, { label: 'Fast' }]], 'rate') : null,
     group('Sound effects', onOff, 'sfx'),
-    group('Less movement', onOff, 'reduceMotion'));
+    group('Less movement', onOff, 'reduceMotion'),
+    COACH_URL ? coachCodeGroup() : null);
   if (current) {
     // Opened from inside a level: cover the game, keep your place, and resume after.
     pauseGame(true);
@@ -389,12 +434,6 @@ function showSettings(back) {
     stop();
     screens.replaceChildren(node);
     screens.scrollTop = 0;
-    node.querySelector('.topbar .btn').onclick = () => {
-      hideScreens();
-      input.blocked = false;
-      pauseGame(false);
-      $('game').focus({ preventScroll: true });
-    };
     node.querySelector('.topbar .btn').focus({ preventScroll: true });
   } else showScreen(node);
 }
@@ -402,6 +441,7 @@ function showSettings(back) {
 /* ---------------- HUD & touch wiring ---------------- */
 $('hud-map').addEventListener('click', () => showMap());
 $('hud-settings').addEventListener('click', () => showSettings(showMap));
+$('hud-coach').addEventListener('click', (e) => { e.currentTarget.blur(); askCoach(); });
 document.querySelectorAll('.tbtn').forEach((b) => bindTouch(b, b.dataset.ctl));
 document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
 
